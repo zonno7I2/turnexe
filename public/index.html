@@ -1,0 +1,1800 @@
+<!DOCTYPE html>
+<html lang="ja" dir="ltr" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Copilot</title>
+
+  <!-- Copilot 実CSS -->
+  <link rel="stylesheet" href="index-imRmuNkR.css" />
+  <style>
+    /* 元のスタイルをそのまま保持 */
+    .message-user {
+      background-color: #1c2338;
+      color: #f1f5f9;
+      border-radius: 18px 4px 18px 18px;
+      margin-left: auto;
+      max-width: 85%;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .message-user::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(29, 78, 216, 0.05) 100%);
+      pointer-events: none;
+    }
+    
+    .message-ai {
+      background-color: transparent;
+      color: #f1f5f9;
+      border-radius: 4px 18px 18px 18px;
+      margin-right: auto;
+      max-width: 85%;
+    }
+    
+    .message-container {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      padding: 16px 0;
+    }
+    
+    .message-content {
+      padding: 12px 16px;
+      font-size: 14px;
+      line-height: 1.6;
+      position: relative;
+      z-index: 1;
+    }
+    
+    .message-ai .message-content {
+      padding-left: 0;
+    }
+    
+    .input-container {
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 24px;
+      transition: all 0.2s ease;
+      backdrop-filter: blur(10px);
+    }
+    
+    .input-container:focus-within {
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+    }
+    
+    .chip {
+      background: #1e293b;
+      border: 1px solid #334155;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      color: #cbd5e1;
+    }
+    
+    .chip:hover {
+      background: #334155;
+      color: #ffffff;
+    }
+    
+    .nav-item {
+      padding: 10px 12px;
+      border-radius: 8px;
+      margin-bottom: 4px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      transition: all 0.2s ease;
+      color: #cbd5e1;
+    }
+    
+    .nav-item:hover {
+      background: #1e293b;
+      color: #ffffff;
+    }
+    
+    .nav-item.active {
+      background: #1e293b;
+      color: #ffffff;
+      font-weight: 500;
+    }
+    
+    /* メッセージのアニメーション */
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    .message-user, .message-ai {
+      animation: fadeInUp 0.3s ease-out;
+    }
+    
+    /* AIアイコンのスタイル */
+    .ai-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      background: linear-gradient(135deg, #8b5cf6 0%, #3b82f6 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      margin-right: 12px;
+      flex-shrink: 0;
+    }
+    
+    .ai-message-wrapper {
+      display: flex;
+      align-items: flex-start;
+    }
+    
+    /* ローディングインジケーター */
+    .typing-indicator {
+      display: flex;
+      align-items: center;
+      padding: 8px 16px;
+    }
+    
+    .typing-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background-color: #94a3b8;
+      margin: 0 2px;
+      animation: typing 1.4s infinite ease-in-out;
+    }
+    
+    .typing-dot:nth-child(1) { animation-delay: -0.32s; }
+    .typing-dot:nth-child(2) { animation-delay: -0.16s; }
+    
+    @keyframes typing {
+      0%, 80%, 100% { transform: translateY(0); opacity: 0.5; }
+      40% { transform: translateY(-10px); opacity: 1; }
+    }
+    
+    /* エラーメッセージ */
+    .error-message {
+      background-color: rgba(239, 68, 68, 0.1);
+      border-left: 3px solid #ef4444;
+      padding: 12px 16px;
+      border-radius: 8px;
+      margin: 10px 0;
+      color: #fecaca;
+      font-size: 13px;
+    }
+    
+    /* ログインモーダルスタイル */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 20px;
+    }
+    
+    .modal-content {
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      width: 100%;
+      max-width: 400px;
+      overflow: hidden;
+    }
+    
+    .modal-header {
+      padding: 20px;
+      border-bottom: 1px solid #334155;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .modal-title {
+      font-size: 20px;
+      font-weight: 600;
+      color: white;
+    }
+    
+    .modal-close {
+      background: none;
+      border: none;
+      color: #94a3b8;
+      cursor: pointer;
+      padding: 4px;
+      border-radius: 4px;
+    }
+    
+    .modal-close:hover {
+      background: #1e293b;
+      color: white;
+    }
+    
+    .modal-tabs {
+      display: flex;
+      border-bottom: 1px solid #334155;
+    }
+    
+    .modal-tab {
+      flex: 1;
+      padding: 16px;
+      text-align: center;
+      background: none;
+      border: none;
+      color: #94a3b8;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .modal-tab.active {
+      color: white;
+      border-bottom: 2px solid #3b82f6;
+    }
+    
+    .modal-body {
+      padding: 24px;
+    }
+    
+    .form-group {
+      margin-bottom: 16px;
+    }
+    
+    .form-label {
+      display: block;
+      margin-bottom: 8px;
+      color: #cbd5e1;
+      font-size: 14px;
+    }
+    
+    .form-input {
+      width: 100%;
+      padding: 12px;
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      color: white;
+      font-size: 14px;
+    }
+    
+    .form-input:focus {
+      outline: none;
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+    
+    .btn-primary {
+      width: 100%;
+      padding: 12px;
+      background: #3b82f6;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    
+    .btn-primary:hover {
+      background: #2563eb;
+    }
+    
+    .btn-google {
+      width: 100%;
+      padding: 12px;
+      background: white;
+      color: #374151;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 16px;
+    }
+    
+    .btn-google:hover {
+      background: #f9fafb;
+    }
+    
+    .divider {
+      display: flex;
+      align-items: center;
+      margin: 20px 0;
+      color: #64748b;
+    }
+    
+    .divider::before,
+    .divider::after {
+      content: '';
+      flex: 1;
+      border-bottom: 1px solid #334155;
+    }
+    
+    .divider-text {
+      padding: 0 12px;
+      font-size: 14px;
+    }
+    
+    .user-menu {
+      position: absolute;
+      bottom: 70px;
+      left: 20px;
+      width: 250px;
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+      z-index: 50;
+      overflow: hidden;
+    }
+    
+    .user-profile {
+      padding: 16px;
+      border-bottom: 1px solid #334155;
+    }
+    
+    .user-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #8b5cf6 0%, #3b82f6 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 600;
+      font-size: 18px;
+    }
+    
+    .user-info {
+      margin-left: 12px;
+    }
+    
+    .user-name {
+      font-weight: 500;
+      color: white;
+      font-size: 14px;
+    }
+    
+    .user-email {
+      color: #94a3b8;
+      font-size: 12px;
+      margin-top: 2px;
+    }
+    
+    .menu-item {
+      display: flex;
+      align-items: center;
+      padding: 12px 16px;
+      color: #cbd5e1;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    
+    .menu-item:hover {
+      background: #1e293b;
+      color: white;
+    }
+    
+    .menu-icon {
+      margin-right: 12px;
+      font-size: 16px;
+    }
+    
+    /* モデル表示用スタイル */
+    .model-badge {
+      background: linear-gradient(135deg, #8b5cf6 0%, #3b82f6 100%);
+      color: white;
+      border-radius: 6px;
+      padding: 4px 8px;
+      font-size: 11px;
+      font-weight: 500;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    
+    /* ===== 高級感ある通知システム ===== */
+    .notification-container {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 9999;
+      max-width: 400px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    
+    .notification {
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 16px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      transform: translateX(120%);
+      transition: transform 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+    }
+    
+    .notification.show {
+      transform: translateX(0);
+    }
+    
+    .notification-icon {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      font-size: 12px;
+    }
+    
+    .notification-success .notification-icon {
+      background: rgba(34, 197, 94, 0.1);
+      color: #22c55e;
+    }
+    
+    .notification-error .notification-icon {
+      background: rgba(239, 68, 68, 0.1);
+      color: #ef4444;
+    }
+    
+    .notification-warning .notification-icon {
+      background: rgba(245, 158, 11, 0.1);
+      color: #f59e0b;
+    }
+    
+    .notification-info .notification-icon {
+      background: rgba(59, 130, 246, 0.1);
+      color: #3b82f6;
+    }
+    
+    .notification-content {
+      flex: 1;
+      min-width: 0;
+    }
+    
+    .notification-title {
+      font-weight: 600;
+      color: white;
+      margin-bottom: 4px;
+      font-size: 14px;
+    }
+    
+    .notification-message {
+      color: #94a3b8;
+      font-size: 13px;
+      line-height: 1.4;
+    }
+    
+    .notification-close {
+      background: none;
+      border: none;
+      color: #64748b;
+      cursor: pointer;
+      padding: 4px;
+      border-radius: 4px;
+      margin-left: 8px;
+      flex-shrink: 0;
+    }
+    
+    .notification-close:hover {
+      background: #1e293b;
+      color: white;
+    }
+    
+    /* 確認モーダル */
+    .confirm-modal {
+      max-width: 380px;
+    }
+    
+    .confirm-modal .modal-body {
+      padding-bottom: 20px;
+    }
+    
+    .confirm-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 16px;
+      font-size: 20px;
+    }
+    
+    .confirm-modal.warning .confirm-icon {
+      background: rgba(245, 158, 11, 0.1);
+      color: #f59e0b;
+    }
+    
+    .confirm-modal.info .confirm-icon {
+      background: rgba(59, 130, 246, 0.1);
+      color: #3b82f6;
+    }
+    
+    .confirm-title {
+      text-align: center;
+      font-size: 18px;
+      font-weight: 600;
+      color: white;
+      margin-bottom: 8px;
+    }
+    
+    .confirm-message {
+      text-align: center;
+      color: #94a3b8;
+      font-size: 14px;
+      line-height: 1.5;
+      margin-bottom: 24px;
+    }
+    
+    .confirm-actions {
+      display: flex;
+      gap: 12px;
+    }
+    
+    .confirm-actions .btn-primary {
+      flex: 1;
+    }
+    
+    .confirm-actions .btn-secondary {
+      flex: 1;
+      padding: 12px;
+      background: #1e293b;
+      color: #cbd5e1;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .confirm-actions .btn-secondary:hover {
+      background: #334155;
+      color: white;
+    }
+    
+    /* トースト通知 */
+    .toast-container {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 9999;
+      max-width: 400px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    
+    .toast {
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 12px 16px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      transform: translateY(100%);
+      opacity: 0;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+    
+    .toast-icon {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      flex-shrink: 0;
+    }
+    
+    .toast-success .toast-icon {
+      background: rgba(34, 197, 94, 0.1);
+      color: #22c55e;
+    }
+    
+    .toast-message {
+      color: #cbd5e1;
+      font-size: 13px;
+      flex: 1;
+    }
+    
+    /* プロフィールモーダル */
+    .profile-modal {
+      max-width: 450px;
+    }
+    
+    .profile-info {
+      background: #1e293b;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    
+    .profile-row {
+      display: flex;
+      margin-bottom: 12px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #334155;
+    }
+    
+    .profile-row:last-child {
+      margin-bottom: 0;
+      padding-bottom: 0;
+      border-bottom: none;
+    }
+    
+    .profile-label {
+      width: 120px;
+      color: #94a3b8;
+      font-size: 13px;
+      flex-shrink: 0;
+    }
+    
+    .profile-value {
+      color: white;
+      font-size: 13px;
+      flex: 1;
+    }
+  </style>
+</head>
+<body data-tabster='{"root":{}}'>
+  <!-- ログインモーダル -->
+  <div id="loginModal" class="modal-overlay" style="display: none;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title">ログイン</h2>
+        <button class="modal-close" onclick="hideLoginModal()">✕</button>
+      </div>
+      
+      <div class="modal-tabs">
+        <button id="loginTab" class="modal-tab active" onclick="showLoginTab()">ログイン</button>
+        <button id="registerTab" class="modal-tab" onclick="showRegisterTab()">新規登録</button>
+      </div>
+      
+      <div class="modal-body">
+        <!-- ログインフォーム -->
+        <div id="loginForm">
+          <div class="form-group">
+            <label class="form-label">メールアドレス</label>
+            <input type="email" id="loginEmail" class="form-input" placeholder="your@email.com">
+            <small style="color: #94a3b8; font-size: 12px; margin-top: 4px; display: block;">
+              信頼できるメールプロバイダー（Gmail, Outlook, Yahooなど）のみ利用可能です
+            </small>
+          </div>
+          <div class="form-group">
+            <label class="form-label">パスワード</label>
+            <input type="password" id="loginPassword" class="form-input" placeholder="••••••••">
+          </div>
+          <button class="btn-primary" onclick="loginWithEmail()">ログイン</button>
+          
+          <div class="divider">
+            <span class="divider-text">または</span>
+          </div>
+          
+          <button class="btn-google" onclick="loginWithGoogle()">
+            <img src="https://www.google.com/favicon.ico" alt="Google" width="18" height="18">
+            Googleで続ける
+          </button>
+        </div>
+        
+        <!-- 登録フォーム -->
+        <div id="registerForm" style="display: none;">
+          <div class="form-group">
+            <label class="form-label">名前</label>
+            <input type="text" id="registerName" class="form-input" placeholder="山田 太郎">
+          </div>
+          <div class="form-group">
+            <label class="form-label">メールアドレス</label>
+            <input type="email" id="registerEmail" class="form-input" placeholder="your@email.com">
+            <small style="color: #94a3b8; font-size: 12px; margin-top: 4px; display: block;">
+              信頼できるメールプロバイダー（Gmail, Outlook, Yahooなど）のみ利用可能です
+            </small>
+          </div>
+          <div class="form-group">
+            <label class="form-label">パスワード</label>
+            <input type="password" id="registerPassword" class="form-input" placeholder="••••••••">
+            <small style="color: #94a3b8; font-size: 12px; margin-top: 4px; display: block;">
+              8文字以上、英字と数字を含めてください
+            </small>
+          </div>
+          <div class="form-group">
+            <label class="form-label">パスワード（確認）</label>
+            <input type="password" id="registerPasswordConfirm" class="form-input" placeholder="••••••••">
+          </div>
+          <button class="btn-primary" onclick="registerWithEmail()">アカウントを作成</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ユーザーメニュー -->
+  <div id="userMenu" class="user-menu" style="display: none;">
+    <div class="user-profile" style="display: flex; align-items: center;">
+      <div id="userAvatar" class="user-avatar">U</div>
+      <div class="user-info">
+        <div id="userName" class="user-name">ユーザー名</div>
+        <div id="userEmail" class="user-email">user@example.com</div>
+      </div>
+    </div>
+    <div class="menu-item" onclick="viewProfile()">
+      <span class="menu-icon">👤</span>
+      プロフィール
+    </div>
+    <div class="menu-item" onclick="logout()" style="color: #f87171;">
+      <span class="menu-icon">🚪</span>
+      ログアウト
+    </div>
+  </div>
+
+  <!-- 通知コンテナ -->
+  <div class="notification-container" id="notificationContainer"></div>
+  
+  <!-- トーストコンテナ -->
+  <div class="toast-container" id="toastContainer"></div>
+  
+  <!-- 確認モーダル -->
+  <div id="confirmModal" class="modal-overlay" style="display: none;">
+    <div class="modal-content confirm-modal">
+      <div class="modal-body">
+        <div class="confirm-icon">⚠️</div>
+        <div class="confirm-title" id="confirmTitle">確認</div>
+        <div class="confirm-message" id="confirmMessage">この操作を実行しますか？</div>
+        <div class="confirm-actions">
+          <button class="btn-secondary" onclick="hideConfirmModal(false)">キャンセル</button>
+          <button class="btn-primary" onclick="hideConfirmModal(true)">続行</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- プロフィールモーダル -->
+  <div id="profileModal" class="modal-overlay" style="display: none;">
+    <div class="modal-content profile-modal">
+      <div class="modal-header">
+        <h2 class="modal-title">プロフィール</h2>
+        <button class="modal-close" onclick="hideProfileModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="profile-info">
+          <div class="profile-row">
+            <div class="profile-label">名前</div>
+            <div class="profile-value" id="profileName">-</div>
+          </div>
+          <div class="profile-row">
+            <div class="profile-label">メール</div>
+            <div class="profile-value" id="profileEmail">-</div>
+          </div>
+          <div class="profile-row">
+            <div class="profile-label">ドメイン</div>
+            <div class="profile-value" id="profileDomain">-</div>
+          </div>
+          <div class="profile-row">
+            <div class="profile-label">登録日</div>
+            <div class="profile-value" id="profileCreatedAt">-</div>
+          </div>
+          <div class="profile-row">
+            <div class="profile-label">認証方法</div>
+            <div class="profile-value" id="profileProvider">-</div>
+          </div>
+          <div class="profile-row">
+            <div class="profile-label">最終ログイン</div>
+            <div class="profile-value" id="profileLastLogin">-</div>
+          </div>
+        </div>
+        <button class="btn-primary" onclick="hideProfileModal()">閉じる</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="app" class="flex h-full overflow-hidden bg-sidebar-dark">
+    <!-- ===== Sidebar ===== -->
+    <aside class="relative hidden md:flex md:w-[280px] flex-col bg-[#020617] border-r border-slate-800">
+      <div class="flex items-center gap-2 px-4 py-3">
+        <div class="w-5 h-5 rounded bg-gradient-to-br from-blue-500 to-purple-500"></div>
+        <span class="text-sm font-semibold text-white">Copilot</span>
+        <span class="model-badge">Gemini 2.5</span>
+      </div>
+      <nav class="flex-1 px-2 text-sm mt-4">
+        <div class="nav-item active" onclick="newChat()">
+          <span class="mr-2">💬</span> 新しいチャット
+        </div>
+        <div class="nav-item">
+          <span class="mr-2">🔍</span> 発見する
+        </div>
+        <div class="nav-item">
+          <span class="mr-2">🎨</span> Imagine 
+          <span class="ml-auto text-xs bg-slate-700 text-slate-300 rounded px-2 py-0.5">新規</span>
+        </div>
+        <div class="nav-item">
+          <span class="mr-2">📚</span> ライブラリ
+        </div>
+        <div class="nav-item">
+          <span class="mr-2">🧪</span> Labs
+        </div>
+        <div class="mt-8 px-2 text-xs text-slate-400 font-medium">最近の会話</div>
+        <div id="historyList" class="mt-2 px-2 text-xs text-slate-500">
+          会話履歴はここに表示されます
+        </div>
+      </nav>
+      <div id="sidebarBottom" class="border-t border-slate-800 p-3">
+        <!-- 初期状態はログインボタン -->
+        <button onclick="showLoginModal()" class="w-full flex items-center justify-center gap-2 text-sm text-slate-300 hover:text-white rounded-lg bg-slate-800/50 px-3 py-2 hover:bg-slate-800 transition-colors">
+          <span>🔐</span> ログイン
+        </button>
+      </div>
+    </aside>
+
+    <!-- ===== Main ===== -->
+    <main class="flex flex-1 flex-col bg-gradient-to-b from-[#0b1220] to-[#020617] relative">
+      <!-- Welcome Screen -->
+      <div id="welcome" class="flex flex-1 flex-col items-center justify-center text-slate-300 gap-8">
+        <div class="text-2xl font-medium text-white">今日はどんなことを考えていますか?</div>
+        
+        <!-- モデル情報表示 -->
+        <div class="flex items-center gap-2 text-sm text-slate-400">
+          <span class="model-badge">Gemini 2.5 Flash Lite</span>
+          <span class="text-xs">高速で効率的なAIアシスタント</span>
+        </div>
+
+        <!-- Composer (center) -->
+        <div class="w-full max-w-2xl px-4">
+          <div class="input-container flex items-center gap-2 px-5 py-4">
+            <button class="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-800/50">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+              </svg>
+            </button>
+            <input
+              id="prompt"
+              placeholder="Copilot へメッセージを送る"
+              class="flex-1 bg-transparent outline-none text-sm text-white placeholder-slate-500 px-2"
+              autocomplete="off"
+            />
+            <button onclick="sendPrompt()" class="text-slate-300 hover:text-white p-1.5 rounded-lg hover:bg-slate-800/50">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+              </svg>
+            </button>
+          </div>
+
+          <!-- Suggestions -->
+          <div class="mt-8 flex flex-wrap gap-3 justify-center">
+            <span class="chip" onclick="fillPrompt('曲を作る')">曲を作る</span>
+            <span class="chip" onclick="fillPrompt('画像を作成する')">画像を作成する</span>
+            <span class="chip" onclick="fillPrompt('アドバイスを受ける')">アドバイスを受ける</span>
+            <span class="chip" onclick="fillPrompt('文章を改善する')">文章を改善する</span>
+            <span class="chip" onclick="fillPrompt('未来を予測する')">未来を予測する</span>
+            <span class="chip" onclick="fillPrompt('考えを整理する')">考えを整理する</span>
+            <span class="chip" onclick="fillPrompt('テストを受ける')">テストを受ける</span>
+            <span class="chip" onclick="fillPrompt('最初の下書きを作成する')">最初の下草案を作成する</span>
+          </div>
+        </div>
+        
+        <!-- Footer note -->
+        <div class="absolute bottom-6 text-xs text-slate-500 text-center">
+          CopilotはGemini 2.5 Flash Liteモデルを使用しています。生成される内容は正確でない可能性があります。
+        </div>
+      </div>
+
+      <!-- Chat Container -->
+      <div id="chat" class="hidden flex-1 overflow-y-auto">
+        <div class="max-w-3xl mx-auto px-4 py-8 message-container" id="messageContainer">
+          <!-- メッセージはここに動的に追加されます -->
+        </div>
+      </div>
+      
+      <!-- Chat Input -->
+      <div id="chatInput" class="hidden p-6 border-t border-slate-800/50 bg-gradient-to-t from-[#0b1220] via-[#0b1220] to-transparent">
+        <div class="max-w-3xl mx-auto">
+          <div class="flex items-center justify-between mb-3">
+            <div class="text-xs text-slate-400">
+              現在のモデル: <span class="model-badge">Gemini 2.5 Flash Lite</span>
+            </div>
+            <div class="text-xs text-slate-500">
+              無料プランは生成回数に制限があります
+            </div>
+          </div>
+          <div class="input-container flex items-center gap-2 px-5 py-4">
+            <button class="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-800/50" onclick="attachFile()">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+              </svg>
+            </button>
+            <input
+              id="chatPrompt"
+              placeholder="Copilot にメッセージを送る"
+              class="flex-1 bg-transparent outline-none text-sm text-white placeholder-slate-500 px-2"
+              autocomplete="off"
+            />
+            <button onclick="sendChatPrompt()" class="text-slate-300 hover:text-white p-1.5 rounded-lg hover:bg-slate-800/50">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ===== JavaScript ===== -->
+  <script>
+// DOM要素
+const chatDiv = document.getElementById('chat');
+const welcomeDiv = document.getElementById('welcome');
+const promptInput = document.getElementById('prompt');
+const chatPromptInput = document.getElementById('chatPrompt');
+const chatInputDiv = document.getElementById('chatInput');
+const messageContainer = document.getElementById('messageContainer');
+const historyList = document.getElementById('historyList');
+const sidebarBottom = document.getElementById('sidebarBottom');
+const loginModal = document.getElementById('loginModal');
+const userMenu = document.getElementById('userMenu');
+const confirmModal = document.getElementById('confirmModal');
+const profileModal = document.getElementById('profileModal');
+
+// 状態管理
+let history = [];
+let currentEmail = '';
+let isTyping = false;
+let isAuthenticated = false;
+let currentUser = {
+  email: '',
+  name: '',
+  logged_in: false
+};
+let confirmCallback = null;
+
+// 通知システム
+class NotificationSystem {
+  constructor() {
+    this.notificationContainer = document.getElementById('notificationContainer');
+    this.toastContainer = document.getElementById('toastContainer');
+    this.notificationId = 0;
+  }
+  
+  showNotification(type, title, message, duration = 5000) {
+    const id = `notification-${++this.notificationId}`;
+    const iconMap = {
+      success: '✓',
+      error: '✕',
+      warning: '⚠',
+      info: 'ℹ'
+    };
+    
+    const notification = document.createElement('div');
+    notification.id = id;
+    notification.className = `notification notification-${type}`;
+    notification.innerHTML = `
+      <div class="notification-icon">${iconMap[type]}</div>
+      <div class="notification-content">
+        <div class="notification-title">${title}</div>
+        <div class="notification-message">${message}</div>
+      </div>
+      <button class="notification-close" onclick="this.closest('.notification').remove()">✕</button>
+    `;
+    
+    this.notificationContainer.appendChild(notification);
+    
+    // アニメーション開始
+    setTimeout(() => notification.classList.add('show'), 10);
+    
+    // 自動削除
+    if (duration > 0) {
+      setTimeout(() => {
+        if (notification.parentNode) {
+          notification.classList.remove('show');
+          setTimeout(() => notification.remove(), 300);
+        }
+      }, duration);
+    }
+    
+    return id;
+  }
+  
+  showToast(type, message, duration = 3000) {
+    const id = `toast-${++this.notificationId}`;
+    const iconMap = {
+      success: '✓',
+      error: '✕',
+      warning: '⚠',
+      info: 'ℹ'
+    };
+    
+    const toast = document.createElement('div');
+    toast.id = id;
+    toast.className = `toast toast-${type}`;
+    toast.innerHTML = `
+      <div class="toast-icon">${iconMap[type]}</div>
+      <div class="toast-message">${message}</div>
+    `;
+    
+    this.toastContainer.appendChild(toast);
+    
+    // アニメーション開始
+    setTimeout(() => toast.classList.add('show'), 10);
+    
+    // 自動削除
+    setTimeout(() => {
+      if (toast.parentNode) {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 300);
+      }
+    }, duration);
+    
+    return id;
+  }
+  
+  removeNotification(id) {
+    const element = document.getElementById(id);
+    if (element) {
+      element.classList.remove('show');
+      setTimeout(() => element.remove(), 300);
+    }
+  }
+}
+
+const notify = new NotificationSystem();
+
+// 初期化
+document.addEventListener('DOMContentLoaded', () => {
+  checkAuthStatus();
+  
+  // Enterキーで送信
+  promptInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendPrompt();
+    }
+  });
+  
+  chatPromptInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendChatPrompt();
+    }
+  });
+  
+  // サジェスト履歴を読み込み
+  loadHistoryList();
+});
+
+// ===== 通知ヘルパー関数 =====
+function showSuccess(message, title = '成功') {
+  return notify.showNotification('success', title, message);
+}
+
+function showError(message, title = 'エラー') {
+  return notify.showNotification('error', title, message);
+}
+
+function showInfo(message, title = '情報') {
+  return notify.showNotification('info', title, message);
+}
+
+function showWarning(message, title = '警告') {
+  return notify.showNotification('warning', title, message);
+}
+
+function showToastSuccess(message) {
+  return notify.showToast('success', message);
+}
+
+function showToastError(message) {
+  return notify.showToast('error', message);
+}
+
+function showConfirm(title, message, callback) {
+  document.getElementById('confirmTitle').textContent = title;
+  document.getElementById('confirmMessage').textContent = message;
+  confirmModal.style.display = 'flex';
+  confirmCallback = callback;
+}
+
+function hideConfirmModal(result) {
+  confirmModal.style.display = 'none';
+  if (confirmCallback) {
+    confirmCallback(result);
+    confirmCallback = null;
+  }
+}
+
+function showProfileModal(profile) {
+  document.getElementById('profileName').textContent = profile.name || '-';
+  document.getElementById('profileEmail').textContent = profile.email || '-';
+  document.getElementById('profileDomain').textContent = profile.domain || '-';
+  document.getElementById('profileCreatedAt').textContent = profile.created_at ? 
+    new Date(profile.created_at).toLocaleDateString('ja-JP') : '-';
+  document.getElementById('profileProvider').textContent = 
+    profile.provider === 'google' ? 'Google' : 'メール/パスワード';
+  document.getElementById('profileLastLogin').textContent = profile.last_login ? 
+    new Date(profile.last_login).toLocaleString('ja-JP') : '未記録';
+  profileModal.style.display = 'flex';
+}
+
+function hideProfileModal() {
+  profileModal.style.display = 'none';
+}
+
+// ===== 認証関数 =====
+
+// 認証状態をチェック
+async function checkAuthStatus() {
+  try {
+    const res = await fetch('/auth/status', {
+      credentials: 'include'
+    });
+    const data = await res.json();
+    
+    if (data.logged_in) {
+      isAuthenticated = true;
+      currentUser = data.user || {
+        email: data.email || '',
+        name: data.name || 'ユーザー',
+        logged_in: true
+      };
+      currentEmail = currentUser.email;
+      updateUIForLoggedInUser();
+      showToastSuccess(`${currentUser.name}さん、ようこそ！`);
+    } else {
+      showLoginModal();
+    }
+  } catch (err) {
+    console.error('認証チェックエラー:', err);
+    showLoginModal();
+  }
+}
+
+// ログインモーダルを表示
+function showLoginModal() {
+  loginModal.style.display = 'flex';
+}
+
+// ログインモーダルを非表示
+function hideLoginModal() {
+  loginModal.style.display = 'none';
+}
+
+// ログインタブ表示
+function showLoginTab() {
+  document.getElementById('loginForm').style.display = 'block';
+  document.getElementById('registerForm').style.display = 'none';
+  document.getElementById('loginTab').classList.add('active');
+  document.getElementById('registerTab').classList.remove('active');
+}
+
+// 登録タブ表示
+function showRegisterTab() {
+  document.getElementById('loginForm').style.display = 'none';
+  document.getElementById('registerForm').style.display = 'block';
+  document.getElementById('registerTab').classList.add('active');
+  document.getElementById('loginTab').classList.remove('active');
+}
+
+// メールでログイン
+async function loginWithEmail() {
+  const email = document.getElementById('loginEmail').value.trim().toLowerCase();
+  const password = document.getElementById('loginPassword').value;
+  
+  if (!email || !password) {
+    showError('メールアドレスとパスワードを入力してください');
+    return;
+  }
+  
+  try {
+    const res = await fetch('/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ email, password })
+    });
+    
+    const data = await res.json();
+    
+    if (res.ok && data.status === 'success') {
+      isAuthenticated = true;
+      currentUser = {
+        email: data.data?.email || email,
+        name: data.data?.name || email.split('@')[0],
+        logged_in: true,
+        provider: 'email'
+      };
+      currentEmail = currentUser.email;
+      hideLoginModal();
+      updateUIForLoggedInUser();
+      showSuccess('ログインしました！');
+      
+      // 入力欄をクリア
+      document.getElementById('loginEmail').value = '';
+      document.getElementById('loginPassword').value = '';
+    } else {
+      throw new Error(data.error || 'ログインに失敗しました');
+    }
+  } catch (err) {
+    console.error('ログインエラー:', err);
+    showError('ログインエラー: ' + err.message);
+  }
+}
+
+// メールで登録
+async function registerWithEmail() {
+  const name = document.getElementById('registerName').value.trim();
+  const email = document.getElementById('registerEmail').value.trim().toLowerCase();
+  const password = document.getElementById('registerPassword').value;
+  const passwordConfirm = document.getElementById('registerPasswordConfirm').value;
+  
+  if (!email || !password) {
+    showError('メールアドレスとパスワードを入力してください');
+    return;
+  }
+  
+  if (password !== passwordConfirm) {
+    showError('パスワードが一致しません');
+    return;
+  }
+  
+  try {
+    const res = await fetch('/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ email, password, name })
+    });
+    
+    const data = await res.json();
+    
+    if (res.ok && data.status === 'success') {
+      isAuthenticated = true;
+      currentUser = {
+        email: data.data?.email || email,
+        name: data.data?.name || name,
+        logged_in: true,
+        provider: 'email'
+      };
+      currentEmail = currentUser.email;
+      hideLoginModal();
+      updateUIForLoggedInUser();
+      showSuccess('登録完了！ログインしました。');
+      
+      // 入力欄をクリア
+      document.getElementById('registerName').value = '';
+      document.getElementById('registerEmail').value = '';
+      document.getElementById('registerPassword').value = '';
+      document.getElementById('registerPasswordConfirm').value = '';
+    } else {
+      throw new Error(data.error || '登録に失敗しました');
+    }
+  } catch (err) {
+    console.error('登録エラー:', err);
+    showError('登録エラー: ' + err.message);
+  }
+}
+
+// Googleログイン
+function loginWithGoogle() {
+  showInfo('Googleログインは現在準備中です。メールアドレスとパスワードでログインしてください。');
+}
+
+// ログイン時のUI更新
+function updateUIForLoggedInUser() {
+  // サイドバーを更新
+  sidebarBottom.innerHTML = `
+    <div class="flex items-center gap-3 cursor-pointer" onclick="toggleUserMenu()">
+      <div class="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-medium text-sm">
+        ${currentUser.name?.charAt(0).toUpperCase() || 'U'}
+      </div>
+      <div class="flex-1 min-w-0">
+        <div class="text-sm font-medium text-white truncate">${currentUser.name || 'ユーザー'}</div>
+        <div class="text-xs text-slate-400 truncate">${currentUser.email}</div>
+      </div>
+      <span class="text-slate-400">▼</span>
+    </div>
+    <div class="mt-3 flex gap-2">
+      <button onclick="loadHistory()" class="flex-1 flex items-center justify-center gap-1 text-sm text-slate-300 hover:text-white rounded-lg bg-slate-800/50 px-3 py-2 hover:bg-slate-800 transition-colors">
+        <span>📜</span> 履歴読込
+      </button>
+      <button onclick="saveHistory()" class="flex-1 flex items-center justify-center gap-1 text-sm text-slate-300 hover:text-white rounded-lg bg-slate-800/50 px-3 py-2 hover:bg-slate-800 transition-colors">
+        <span>💾</span> 履歴保存
+      </button>
+    </div>
+  `;
+  
+  // ユーザーメニュー情報を設定
+  document.getElementById('userName').textContent = currentUser.name || 'ユーザー';
+  document.getElementById('userEmail').textContent = currentUser.email || '';
+  document.getElementById('userAvatar').textContent = (currentUser.name?.charAt(0) || 'U').toUpperCase();
+  
+  // ローカルストレージに保存
+  localStorage.setItem('copilot_email', currentUser.email);
+}
+
+// ユーザーメニューの表示/非表示
+function toggleUserMenu() {
+  if (userMenu.style.display === 'none' || userMenu.style.display === '') {
+    userMenu.style.display = 'block';
+    
+    // クリックで閉じる
+    setTimeout(() => {
+      const closeMenu = (e) => {
+        if (!userMenu.contains(e.target) && !sidebarBottom.contains(e.target)) {
+          userMenu.style.display = 'none';
+          document.removeEventListener('click', closeMenu);
+        }
+      };
+      document.addEventListener('click', closeMenu);
+    }, 10);
+  } else {
+    userMenu.style.display = 'none';
+  }
+}
+
+// プロフィール表示
+async function viewProfile() {
+  try {
+    const res = await fetch('/user/profile', {
+      credentials: 'include'
+    });
+    
+    if (res.ok) {
+      const data = await res.json();
+      const profile = data.data || data;
+      showProfileModal(profile);
+      userMenu.style.display = 'none';
+    } else {
+      const data = await res.json();
+      throw new Error(data.error || 'プロフィールの取得に失敗しました');
+    }
+  } catch (err) {
+    console.error('プロフィール取得エラー:', err);
+    showError('プロフィールの取得に失敗しました');
+  }
+}
+
+// ログアウト
+async function logout() {
+  showConfirm(
+    'ログアウト',
+    '本当にログアウトしますか？',
+    async (confirmed) => {
+      if (!confirmed) return;
+      
+      try {
+        const res = await fetch('/auth/logout', {
+          method: 'POST',
+          credentials: 'include'
+        });
+        
+        if (res.ok) {
+          isAuthenticated = false;
+          currentUser = {
+            email: '',
+            name: '',
+            logged_in: false
+          };
+          currentEmail = '';
+          
+          // UIをリセット
+          sidebarBottom.innerHTML = `
+            <button onclick="showLoginModal()" class="w-full flex items-center justify-center gap-2 text-sm text-slate-300 hover:text-white rounded-lg bg-slate-800/50 px-3 py-2 hover:bg-slate-800 transition-colors">
+              <span>🔐</span> ログイン
+            </button>
+          `;
+          
+          userMenu.style.display = 'none';
+          localStorage.removeItem('copilot_email');
+          
+          showSuccess('ログアウトしました');
+          showLoginModal();
+        } else {
+          throw new Error('ログアウトに失敗しました');
+        }
+      } catch (err) {
+        console.error('ログアウトエラー:', err);
+        showError('ログアウトエラー: ' + err.message);
+      }
+    }
+  );
+}
+
+// ===== 既存関数（認証チェック付き） =====
+
+// サジェストを入力フィールドにセット
+function fillPrompt(text) {
+  if (!isAuthenticated) {
+    showLoginModal();
+    return;
+  }
+  
+  if (welcomeDiv.classList.contains('hidden')) {
+    chatPromptInput.value = text;
+    chatPromptInput.focus();
+    showToastSuccess(`「${text}」を入力しました`);
+  } else {
+    promptInput.value = text;
+    promptInput.focus();
+    showToastSuccess(`「${text}」を入力しました`);
+  }
+}
+
+// 新しいチャット
+function newChat() {
+  if (!isAuthenticated) {
+    showLoginModal();
+    return;
+  }
+  
+  if (history.length > 0) {
+    showConfirm(
+      '新しいチャット',
+      '現在のチャットを終了して新しいチャットを開始しますか？',
+      (confirmed) => {
+        if (confirmed) {
+          history = [];
+          welcomeDiv.classList.remove('hidden');
+          chatDiv.classList.add('hidden');
+          chatInputDiv.classList.add('hidden');
+          promptInput.value = '';
+          promptInput.focus();
+          showToastSuccess('新しいチャットを開始しました');
+        }
+      }
+    );
+  } else {
+    history = [];
+    welcomeDiv.classList.remove('hidden');
+    chatDiv.classList.add('hidden');
+    chatInputDiv.classList.add('hidden');
+    promptInput.value = '';
+    promptInput.focus();
+    showToastSuccess('新しいチャットを開始しました');
+  }
+}
+
+// 履歴一覧を読み込み
+async function loadHistoryList() {
+  try {
+    const res = await fetch('/health');
+    const data = await res.json();
+    
+    if (data.api_key_set) {
+      historyList.innerHTML = '<div class="text-green-400">✓ API接続済み</div>';
+    } else {
+      historyList.innerHTML = '<div class="text-red-400">✗ APIキー未設定</div>';
+    }
+  } catch (err) {
+    historyList.innerHTML = '<div class="text-red-400">✗ サーバー未接続</div>';
+  }
+}
+
+// 履歴を読み込み
+async function loadHistory() {
+  if (!isAuthenticated) {
+    showLoginModal();
+    return;
+  }
+  
+  try {
+    const res = await fetch(`/history?email=${encodeURIComponent(currentEmail)}`, {
+      credentials: 'include'
+    });
+    
+    if (!res.ok) {
+      const error = await res.json();
+      throw new Error(error.error || '履歴の読み込みに失敗しました');
+    }
+    
+    const loadedHistory = await res.json();
+    history = loadedHistory;
+    
+    if (history.length > 0) {
+      // ウェルカム画面を非表示、チャット画面を表示
+      welcomeDiv.classList.add('hidden');
+      chatDiv.classList.remove('hidden');
+      chatInputDiv.classList.remove('hidden');
+      
+      // メッセージを表示
+      renderMessages();
+      showSuccess(`${history.length}件のメッセージを読み込みました`);
+    } else {
+      showInfo('履歴はありません。新しいチャットを開始します。');
+      startNewChat();
+    }
+  } catch (err) {
+    console.error('履歴読み込みエラー:', err);
+    showError('履歴読み込みエラー: ' + err.message);
+  }
+}
+
+// 履歴を保存
+async function saveHistory() {
+  if (!isAuthenticated) {
+    showLoginModal();
+    return;
+  }
+  
+  if (history.length === 0) {
+    showWarning('保存するメッセージがありません');
+    return;
+  }
+  
+  try {
+    const res = await fetch('/history', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ 
+        email: currentEmail, 
+        history: history 
+      })
+    });
+    
+    if (!res.ok) {
+      const error = await res.json();
+      throw new Error(error.error || '履歴の保存に失敗しました');
+    }
+    
+    showSuccess('履歴を保存しました');
+  } catch (err) {
+    console.error('履歴保存エラー:', err);
+    showError('履歴保存エラー: ' + err.message);
+  }
+}
+
+// 新しいチャットを開始
+function startNewChat() {
+  welcomeDiv.classList.add('hidden');
+  chatDiv.classList.remove('hidden');
+  chatInputDiv.classList.remove('hidden');
+  renderMessages();
+}
+
+// メッセージ送信（ウェルカム画面から）
+async function sendPrompt() {
+  if (!isAuthenticated) {
+    showLoginModal();
+    return;
+  }
+  
+  const text = promptInput.value.trim();
+  if (!text) {
+    showError('メッセージを入力してください');
+    return;
+  }
+  
+  // 初回メッセージの場合は画面を切り替え
+  if (!welcomeDiv.classList.contains('hidden')) {
+    startNewChat();
+  }
+  
+  await addMessage('user', text);
+  promptInput.value = '';
+  
+  // AI応答を取得
+  await getAIResponse(text);
+}
+
+// メッセージ送信（チャット画面から）
+async function sendChatPrompt() {
+  if (!isAuthenticated) {
+    showLoginModal();
+    return;
+  }
+  
+  const text = chatPromptInput.value.trim();
+  if (!text) {
+    showError('メッセージを入力してください');
+    return;
+  }
+  
+  await addMessage('user', text);
+  chatPromptInput.value = '';
+  
+  // AI応答を取得
+  await getAIResponse(text);
+}
+
+// AI応答を取得
+async function getAIResponse(userMessage) {
+  // タイピングインジケーターを表示
+  showTypingIndicator();
+  
+  try {
+    // メッセージ履歴を作成（OpenAI形式）
+    const messages = history.map(msg => ({
+      role: msg.role === 'ai' ? 'assistant' : 'user',
+      content: msg.text
+    }));
+    
+    // 最新のユーザーメッセージを追加
+    messages.push({ role: 'user', content: userMessage });
+    
+    // 固定モデルを使用（サーバー側でも固定されているが、明示的に送信）
+    const res = await fetch('/proxy', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        messages: messages,
+        model: 'gemini-2.5-flash-lite'  // 固定モデル
+      })
+    });
+    
+    const data = await res.json();
+    
+    // タイピングインジケーターを非表示
+    hideTypingIndicator();
+    
+    if (res.ok && data.choices && data.choices[0]) {
+      const aiResponse = data.choices[0].message.content;
+      await addMessage('ai', aiResponse);
+      
+      // 履歴を自動保存
+      await saveHistory();
+    } else {
+      throw new Error(data.error || 'APIからの応答が不正です');
+    }
+  } catch (err) {
+    // タイピングインジケーターを非表示
+    hideTypingIndicator();
+    
+    console.error('AI応答エラー:', err);
+    await addMessage('error', `エラーが発生しました: ${err.message}`);
+    showError('AI応答の取得中にエラーが発生しました');
+  }
+}
+
+// タイピングインジケーターを表示
+function showTypingIndicator() {
+  if (isTyping) return;
+  
+  isTyping = true;
+  
+  const wrapperDiv = document.createElement('div');
+  wrapperDiv.className = 'ai-message-wrapper';
+  wrapperDiv.id = 'typingIndicator';
+  
+  const iconDiv = document.createElement('div');
+  iconDiv.className = 'ai-icon';
+  iconDiv.textContent = 'AI';
+  
+  const messageDiv = document.createElement('div');
+  messageDiv.className = 'message-ai';
+  
+  const contentDiv = document.createElement('div');
+  contentDiv.className = 'typing-indicator';
+  contentDiv.innerHTML = `
+    <div class="typing-dot"></div>
+    <div class="typing-dot"></div>
+    <div class="typing-dot"></div>
+  `;
+  
+  messageDiv.appendChild(contentDiv);
+  wrapperDiv.appendChild(iconDiv);
+  wrapperDiv.appendChild(messageDiv);
+  messageContainer.appendChild(wrapperDiv);
+  
+  // スクロールを最下部に
+  chatDiv.scrollTop = chatDiv.scrollHeight;
+}
+
+// タイピングインジケーターを非表示
+function hideTypingIndicator() {
+  isTyping = false;
+  const indicator = document.getElementById('typingIndicator');
+  if (indicator) {
+    indicator.remove();
+  }
+}
+
+// メッセージを追加
+async function addMessage(role, text) {
+  history.push({ role, text });
+  renderMessages();
+  
+  // チャット画面を最下部にスクロール
+  setTimeout(() => {
+    chatDiv.scrollTop = chatDiv.scrollHeight;
+  }, 100);
+}
+
+// メッセージを表示
+function renderMessages() {
+  messageContainer.innerHTML = '';
+  
+  history.forEach(msg => {
+    if (msg.role === 'error') {
+      // エラーメッセージ
+      const wrapperDiv = document.createElement('div');
+      wrapperDiv.className = 'ai-message-wrapper';
+      
+      const iconDiv = document.createElement('div');
+      iconDiv.className = 'ai-icon';
+      iconDiv.textContent = '⚠️';
+      
+      const messageDiv = document.createElement('div');
+      messageDiv.className = 'error-message';
+      messageDiv.innerHTML = msg.text.replace(/\n/g, '<br>');
+      
+      wrapperDiv.appendChild(iconDiv);
+      wrapperDiv.appendChild(messageDiv);
+      messageContainer.appendChild(wrapperDiv);
+    } else if (msg.role === 'user') {
+      // ユーザーメッセージ
+      const messageDiv = document.createElement('div');
+      messageDiv.className = 'message-user';
+      
+      const contentDiv = document.createElement('div');
+      contentDiv.className = 'message-content';
+      contentDiv.innerHTML = msg.text.replace(/\n/g, '<br>');
+      
+      messageDiv.appendChild(contentDiv);
+      messageContainer.appendChild(messageDiv);
+    } else {
+      // AIメッセージ
+      const wrapperDiv = document.createElement('div');
+      wrapperDiv.className = 'ai-message-wrapper';
+      
+      const iconDiv = document.createElement('div');
+      iconDiv.className = 'ai-icon';
+      iconDiv.textContent = 'AI';
+      
+      const messageDiv = document.createElement('div');
+      messageDiv.className = 'message-ai';
+      
+      const contentDiv = document.createElement('div');
+      contentDiv.className = 'message-content';
+      contentDiv.innerHTML = msg.text.replace(/\n/g, '<br>');
+      
+      messageDiv.appendChild(contentDiv);
+      wrapperDiv.appendChild(iconDiv);
+      wrapperDiv.appendChild(messageDiv);
+      messageContainer.appendChild(wrapperDiv);
+    }
+  });
+}
+
+// ファイル添付（ダミー機能）
+function attachFile() {
+  if (!isAuthenticated) {
+    showLoginModal();
+    return;
+  }
+  showInfo('ファイル添付機能は現在開発中です');
+}
+  </script>
+</body>
+</html>
